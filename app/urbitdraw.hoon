@@ -121,7 +121,7 @@
     [p (min y.p lowest)]
   ::
   ?:  ?|  ?&  =('star' rank)
-              (lth lowest 212)
+              (lth lowest 53)
           ==
           ?&  =('planet' rank)
               (lth lowest 106)  :: "lowest" aka highest value ui allows
