@@ -119,7 +119,6 @@
       999
     |=  [p=[[x=@ud y=@ud] color=@t] lowest=@ud]
     [p (min y.p lowest)]
-  ~&  >>  lowest
   ::
   ?:  ?|  ?&  =('star' rank)
               (lth lowest 212)
@@ -188,7 +187,6 @@
   |=  jon=json
   ^-  pixels:urbitdraw
   %.  jon
-  ::(ar (at ~[ni ni so]))
   (ar (ot ~[coords+(ot ~[x+ni y+ni]) color+so]))
 ::
 ++  get-rank
