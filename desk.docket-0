@@ -1,8 +1,8 @@
-:~  title+'Micro'
-    info+'Create, share, and explore apps.'
+:~  title+'Urbit Draw'
+    info+'Host a canvas for Urbit ships to draw on.'
     color+0xff.4444
-    base+'micro'
-    site+/apps/micro
+    base+'urbitdraw'
+    site+/apps/urbitdraw
     version+[0 1 0]
     website+'https://x.com/hanfel_dovned'
     license+'Draconian'
