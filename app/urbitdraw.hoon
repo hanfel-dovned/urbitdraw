@@ -3,18 +3,15 @@
 /*  ui  %html  /app/urbitdraw/html
 ::
 |%
-::
-+$  versioned-state  $%(state-0)
-::
++$  versioned-state  $%(state-0 state-1)
 +$  state-0  [%0 =canvas:urbitdraw]
-::
++$  state-1  [%1 =canvas:urbitdraw =sessions:urbitdraw]
 +$  card  card:agent:gall
 --
 ::
 %-  agent:dbug
-=|  state-0
+=|  state-1
 =*  state  -
-::
 ^-  agent:gall
 ::
 =<
@@ -87,8 +84,11 @@
 ++  load
   |=  =vase
   ^+  that
-  ?>  ?=([%0 *] q.vase)
-  that(state !<(state-0 vase))
+  =/  old  !<(versioned-state vase)
+  ?-  -.old
+    %1  that(state old)
+    %0  that(state [%1 canvas.old ~])
+  ==
 ::
 ++  watch
   |=  =path
