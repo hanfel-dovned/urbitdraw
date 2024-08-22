@@ -227,11 +227,11 @@
 ++  get-rank
   |=  who=@p
   ^-  @t
-  ?:  (gth src.bowl 0xffff.ffff)
+  ?:  (gth who 0xffff.ffff)
     'comet'
-  ?:  (gth src.bowl 0xffff)
+  ?:  (gth who 0xffff)
     'planet'
-  ?:  (gth src.bowl 0xff)
+  ?:  (gth who 0xff)
     'star'
   'galaxy'
 ::
@@ -240,12 +240,11 @@
 ++  validate
   |=  [who=@p challenge=secret:ud address=tape hancock=tape]
   ^-  ?
-  ~&  >  [who challenge address hancock]
   =/  addy  (from-tape address)
   =/  cock  (from-tape hancock)
   =/  owner  (get-owner who)
-  ?~  owner
-    .^(? %j /=fake=)  :: XX not sure this makes sense for signing into someone else's ship
+  ?~  owner  %.n
+  ::  .^(? %j /=fake=)  :: XX not sure this makes sense for signing into someone else's ship
   ?.  =(addy u.owner)  %.n
   ?.  (~(has in challenges) challenge)  %.n
   =/  note=@uvI
@@ -288,6 +287,6 @@
       `address.owner.own.u.pin
   .^  (unit point:naive)
     %gx
-    /=azimuth=/point/who/noun
+    /(scot %p our.bowl)/azimuth/(scot %da now.bowl)/point/(scot %p who)/noun
   ==
 --
