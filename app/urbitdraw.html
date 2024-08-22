@@ -35,6 +35,16 @@
       background: #ffffff;
     }
 
+    input[type="text"] {
+      font-size: 16px;
+      padding: 10px;
+      margin: 10px;
+      width: 200px;
+      height: 38px;
+      border-radius: 5px;
+      border: 2px solid #000;
+    }
+
     button {
       font-size: 18px;
       margin: 10px;
@@ -50,13 +60,24 @@
     button:hover {
       background-color: #b5b5b5;
     }
+
+    #metaMaskSection {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+    }
   </style>
 </head>
 <body>
   <canvas id="pixelCanvas"></canvas>
-  <button id="logInButton" style="display:none;">Log In</button>
+  <button id="logInButton" style="display:none;">Arvo Login</button>
+  <button id="metaMaskLogInButton" style="display:none;">Azimuth Login</button>
+  <div id="metaMaskSection" style="display:none; flex-direction: row; align-items: center;">
+    <input type="text" id="urbitId" placeholder="Enter Urbit ID">
+    <button id="signInWithMetaMaskButton">Sign in with MetaMask</button>
+  </div>  
   <input type="color" id="colorPicker" style="display:none;">
-  
+
   <script>
     document.addEventListener("DOMContentLoaded", function() {
       let pixelGrid = [];
@@ -75,6 +96,7 @@
         .then(data => {
           const rank = data.rank;
           const pixels = data.pixels;
+          const challenge = data.challenge;
 
           pixels.forEach(([col, row, color]) => {
             ctx.fillStyle = color;
@@ -87,8 +109,50 @@
 
           if (rank === 'comet') {
             document.getElementById("logInButton").style.display = "block";
+            document.getElementById("metaMaskLogInButton").style.display = "block";
+
             document.getElementById("logInButton").addEventListener("click", function() {
-              window.location.href = '/apps/urbitdraw/eauth'; 
+              window.location.href = '/apps/urbitdraw/eauth';
+            });
+
+            document.getElementById("metaMaskLogInButton").addEventListener("click", function() {
+              document.getElementById("metaMaskSection").style.display = "flex";
+            });
+
+            document.getElementById("signInWithMetaMaskButton").addEventListener("click", async function() {
+              try {
+                const accounts = await window.ethereum.request({ method: "eth_accounts" });
+                const account = accounts[0];
+
+                const signature = await window.ethereum.request({
+                  method: "personal_sign",
+                  params: [account, challenge],
+                });
+
+                const body = {
+                  who: document.getElementById("urbitId").value,
+                  address: account,
+                  signature: signature,
+                  secret: challenge,
+                };
+
+                const response = await fetch('/apps/urbitdraw', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json'
+                  },
+                  body: JSON.stringify({ auth: body }),
+                });
+
+                if (response.ok) {
+                  location.reload();  // Refresh the page upon successful login
+                } else {
+                  alert("Login failed. Please try again.");
+                }
+              } catch (error) {
+                console.error("MetaMask login failed:", error);
+                alert("An error occurred during MetaMask login. Please try again.");
+              }
             });
           } else {
             document.getElementById("colorPicker").style.display = "block";
@@ -202,7 +266,7 @@
             const drawData = JSON.stringify(pixelGrid);
             fetch('/apps/urbitdraw', {
               method: 'POST',
-              body: drawData,
+              body: JSON.stringify({"draw": drawData}),
             });
             pixelGrid = [];
           }

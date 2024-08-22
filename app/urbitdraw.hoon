@@ -244,7 +244,7 @@
   =/  cock  (from-tape hancock)
   =/  owner  (get-owner who)
   ?~  owner
-    .^(? %j /=fake=)
+    .^(? %j /=fake=)  :: XX not sure this makes sense for signing into someone else's ship
   ?.  =(addy u.owner)  %.n
   ?.  (~(has in challenges) challenge)  %.n
   =/  note=@uvI
