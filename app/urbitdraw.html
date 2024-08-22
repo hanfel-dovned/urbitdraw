@@ -263,10 +263,9 @@
           }
 
           function sendDrawData() {
-            const drawData = JSON.stringify(pixelGrid);
             fetch('/apps/urbitdraw', {
               method: 'POST',
-              body: JSON.stringify({"draw": drawData}),
+              body: JSON.stringify({draw: pixelGrid}),
             });
             pixelGrid = [];
           }
