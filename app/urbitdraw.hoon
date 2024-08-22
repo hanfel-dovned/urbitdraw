@@ -240,6 +240,7 @@
 ++  validate
   |=  [who=@p challenge=secret:ud address=tape hancock=tape]
   ^-  ?
+  ~&  >  [who challenge address hancock]
   =/  addy  (from-tape address)
   =/  cock  (from-tape hancock)
   =/  owner  (get-owner who)
