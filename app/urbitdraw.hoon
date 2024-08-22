@@ -1,11 +1,11 @@
-/-  urbitdraw, pals
-/+  dbug, default-agent, server, schooner
+/-  ud=urbitdraw, pals
+/+  dbug, default-agent, server, schooner, ethereum, naive
 /*  ui  %html  /app/urbitdraw/html
 ::
 |%
 +$  versioned-state  $%(state-0 state-1)
-+$  state-0  [%0 =canvas:urbitdraw]
-+$  state-1  [%1 =canvas:urbitdraw =sessions:urbitdraw]
++$  state-0  [%0 =canvas:ud]
++$  state-1  [%1 =canvas:ud =sessions:ud =challenges:ud]
 +$  card  card:agent:gall
 --
 ::
@@ -87,7 +87,7 @@
   =/  old  !<(versioned-state vase)
   ?-  -.old
     %1  that(state old)
-    %0  that(state [%1 canvas.old ~])
+    %0  that(state [%1 canvas.old ~ ~])
   ==
 ::
 ++  watch
@@ -106,12 +106,25 @@
     (handle-http !<([@ta =inbound-request:eyre] +.cage))
   ==
 ::
+::  If eauthed in, use that. 
+::  Else, check for mask auth. 
+++  get-id
+  ^-  @p
+  ?:  ?!(=('comet' (get-rank src.bowl)))
+    src.bowl
+  =/  authed  (~(got by sessions) src.bowl)
+  ?:  ?!(=('comet' (get-rank authed)))
+    authed
+  src.bowl
+::
+::  Get y-coord of lowest pixel, reject if it's out of bounds.
 ++  draw
-  |=  pix=pixels:urbitdraw
+  |=  pix=pixels:ud
   ^+  that
-  =/  rank  (get-rank src.bowl)
-  ?:  =('comet' rank)  !!
-  ::
+  =/  id  get-id
+  =/  rank  (get-rank id)
+  ?:  =('comet' rank)
+    !!
   =/  lowest=@ud
     =<  +
     %^    spin
@@ -119,16 +132,14 @@
       999
     |=  [p=[[x=@ud y=@ud] color=@t] lowest=@ud]
     [p (min y.p lowest)]
-  ::
   ?:  ?|  ?&  =('star' rank)
               (lth lowest 53)
           ==
           ?&  =('planet' rank)
-              (lth lowest 106)  :: "lowest" aka highest value ui allows
+              (lth lowest 106)
           ==
       ==
     !!
-  ::
   that(canvas (~(gas by canvas) pix))
 ::
 ++  handle-http
@@ -144,20 +155,40 @@
       %'POST'
     ?~  body.request.inbound-request  !!
     =/  json  (de:json:html q.u.body.request.inbound-request)
-    =/  pix  (dejs-action +.json)
-    (draw pix)
+    =/  act  (dejs-action +.json)
+    ?-    -.act
+        %draw
+      (draw pixels.act)
+    ::
+        %auth
+      ?.  (validate +.act)
+        !!
+      =.  sessions
+        (~(put by sessions) [src.bowl who.act])
+      %-  emil
+      %-  flop
+      %-  send
+      [200 ~ [%html ui]]
+    ==
     ::
       %'GET'
-    %-  emil
-    %-  flop
-    %-  send
+    ::  If this is a new comet, record them.
+    ::  If they haven't mask-authed, create a new challenge.
+    =?    sessions
+        !(~(has by sessions) src.bowl)
+      (~(put by sessions) [src.bowl src.bowl])
+    =/  new-challenge  (sham [now eny]:bowl)
+    =?    challenges
+        =(src.bowl (~(got by sessions) src.bowl))
+      (~(put in challenges) new-challenge)
+    %-  emil  %-  flop  %-  send
     ?+    site  [404 ~ [%plain "404 - Not Found"]]
     ::
         [%apps %urbitdraw ~]
       [200 ~ [%html ui]]
     ::
         [%apps %urbitdraw %state ~]
-      [200 ~ [%json (enjs-state canvas)]]
+      [200 ~ [%json (enjs-state [canvas new-challenge])]]
     ::
         [%apps %urbitdraw %eauth ~]
       [302 ~ [%login-redirect '/apps/urbitdraw&eauth']] 
@@ -166,10 +197,11 @@
 ::
 ++  enjs-state
   =,  enjs:format
-  |=  =canvas:urbitdraw
+  |=  [=canvas:ud challenge=secret:ud]
   ^-  json
   %-  pairs
-  :~  [%rank [%s (get-rank src.bowl)]]
+  :~  [%rank [%s (get-rank get-id)]]
+      [%challenge [%s (scot %uv challenge)]]
       :-  %pixels
       :-  %a
       %+  turn
@@ -185,9 +217,12 @@
 ++  dejs-action
   =,  dejs:format
   |=  jon=json
-  ^-  pixels:urbitdraw
+  ^-  action:ud
   %.  jon
-  (ar (ot ~[coords+(ot ~[x+ni y+ni]) color+so]))
+  %-  of
+  :~  [%draw (ar (ot ~[coords+(ot ~[x+ni y+ni]) color+so]))]
+      [%auth (ot ~[who+(se %p) secret+(se %uv) address+sa signature+sa])]
+  ==
 ::
 ++  get-rank
   |=  who=@p
@@ -199,4 +234,59 @@
   ?:  (gth src.bowl 0xff)
     'star'
   'galaxy'
+::
+::  Modified from ~rabsef-bicrym's %mask
+::  Validate that Owner of Who = Signer of Challenge
+++  validate
+  |=  [who=@p challenge=secret:ud address=tape hancock=tape]
+  ^-  ?
+  =/  addy  (from-tape address)
+  =/  cock  (from-tape hancock)
+  =/  owner  (get-owner who)
+  ?~  owner
+    .^(? %j /=fake=)
+  ?.  =(addy u.owner)  %.n
+  ?.  (~(has in challenges) challenge)  %.n
+  =/  note=@uvI
+    =+  octs=(as-octs:mimes:html (scot %uv challenge))
+    %-  keccak-256:keccak:crypto
+    %-  as-octs:mimes:html
+    ;:  (cury cat 3)
+      '\19Ethereum Signed Message:\0a'
+      (crip (a-co:co p.octs))
+      q.octs
+    ==
+  ?.  &(=(20 (met 3 addy)) =(65 (met 3 cock)))  %.n
+  =/  r  (cut 3 [33 32] cock)
+  =/  s  (cut 3 [1 32] cock)
+  =/  v=@
+    =+  v=(cut 3 [0 1] cock)
+    ?+  v  !!
+      %0   0
+      %1   1
+      %27  0
+      %28  1
+    ==
+  ?.  |(=(0 v) =(1 v))  %.n
+  =/  xy
+    (ecdsa-raw-recover:secp256k1:secp:crypto note v r s)
+  =/  pub  :((cury cat 3) y.xy x.xy 0x4)
+  =/  add  (address-from-pub:key:ethereum pub)
+  =(addy add)
+::
+++  from-tape
+  |=(h=tape ^-(@ux (scan h ;~(pfix (jest '0x') hex))))
+::
+++  get-owner
+  |=  who=@p
+  ^-  (unit @ux)
+  =-  ?~  pin=`(unit point:naive)`-
+        ~
+      ?.  |(?=(%l1 dominion.u.pin) ?=(%l2 dominion.u.pin))
+        ~
+      `address.owner.own.u.pin
+  .^  (unit point:naive)
+    %gx
+    /=azimuth=/point/who/noun
+  ==
 --
